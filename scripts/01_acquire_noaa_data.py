@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 from datetime import datetime
 
-noaa_api_token = "YOUR_NOAA_API_TOKEN_HERE"
+noaa_api_token = "slCkptMeMNzVgHEgAMpYBLYTWNTGUVZH"
 base_url = "https://www.ncei.noaa.gov/cdo-web/api/v2"
 
 metro_areas = {

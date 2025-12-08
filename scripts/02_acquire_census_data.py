@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-census_api_key = "YOUR_CENSUS_API_KEY_HERE"
+census_api_key = "b07bcbfd7c9865cded1e35b6f99fbecfeffec438"
 base_url = "https://api.census.gov/data"
 
 naics_codes = {
