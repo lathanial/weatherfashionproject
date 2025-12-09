@@ -40,12 +40,6 @@ if grep -q "YOUR_NOAA_API_TOKEN_HERE" scripts/01_acquire_noaa_data.py; then
     echo "Please edit scripts/01_acquire_noaa_data.py and add your API token"
     exit 1
 fi
-
-if grep -q "YOUR_CENSUS_API_KEY_HERE" scripts/02_acquire_census_data.py; then
-    echo "ERROR: Census API key not configured!"
-    echo "Please edit scripts/02_acquire_census_data.py and add your API key"
-    exit 1
-fi
 echo "✓ API keys configured"
 echo ""
 

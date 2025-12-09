@@ -1,115 +1,165 @@
 import requests
 import json
-import hashlib
 import time
+import hashlib
 from pathlib import Path
 from datetime import datetime
 
-noaa_api_token = "slCkptMeMNzVgHEgAMpYBLYTWNTGUVZH"
-base_url = "https://www.ncei.noaa.gov/cdo-web/api/v2"
-
-metro_areas = {
-    "New York": "CITY:US360019",
-    "Los Angeles": "CITY:US060037",
-    "Chicago": "CITY:US170031",
-    "Houston": "CITY:US480029",
-    "Phoenix": "CITY:US040013",
-    "Philadelphia": "CITY:US420045",
-    "San Antonio": "CITY:US480065",
-    "San Diego": "CITY:US060073"
-}
-
-start_date = "2013-01-01"
-end_date = "2022-12-31"
-datatypes = ["TMAX", "TMIN", "PRCP", "SNOW", "AWND"]
+NOAA_API_TOKEN = "slCkptMeMNzVgHEgAMpYBLYTWNTGUVZH"
+NOAA_BASE_URL = "https://www.ncei.noaa.gov/cdo-web/api/v2/data"
 
 output_dir = Path("data/raw/noaa")
 output_dir.mkdir(parents=True, exist_ok=True)
 
-def fetch_data(endpoint, params):
-    url = f"{base_url}/{endpoint}"
-    time.sleep(0.2)
-    response = requests.get(url, headers={"token": noaa_api_token}, params=params)
-    if response.status_code == 200:
-        return response.json()
-    return None
+cities = {
+    "New York": "GHCND:USW00094728",
+    "Los Angeles": "GHCND:USW00023174",
+    "Chicago": "GHCND:USW00094846",
+    "Houston": "GHCND:USW00012960",
+    "Phoenix": "GHCND:USW00023183",
+    "Philadelphia": "GHCND:USW00013739",
+    "San Antonio": "GHCND:USW00012921",
+    "San Diego": "GHCND:USW00023188"
+}
 
-def collect_city_data(city_name, location_id):
-    print(f"collecting {city_name}...")
+datatypes = ["TMAX", "TMIN", "PRCP", "SNOW", "AWND"]
+
+start_date = "2013-01-01"
+end_date = "2022-12-31"
+
+def calculate_checksum(filepath):
+    sha256_hash = hashlib.sha256()
+    with open(filepath, "rb") as f:
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
+
+def fetch_noaa_data(station_id, start, end, datatypes_list):
+    headers = {"token": NOAA_API_TOKEN}
     
     params = {
         "datasetid": "GHCND",
-        "locationid": location_id,
-        "startdate": start_date,
-        "enddate": end_date,
-        "datatypeid": ",".join(datatypes),
-        "limit": 1000,
-        "units": "metric"
+        "stationid": station_id,
+        "startdate": start,
+        "enddate": end,
+        "datatypeid": ",".join(datatypes_list),
+        "units": "metric",
+        "limit": 1000
     }
     
-    all_results = []
+    all_data = []
     offset = 1
     
     while True:
         params["offset"] = offset
-        data = fetch_data("data", params)
         
-        if not data or "results" not in data:
+        try:
+            print(f"  requesting offset {offset}...")
+            response = requests.get(NOAA_BASE_URL, headers=headers, params=params)
+            
+            time.sleep(0.25)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if "results" not in data or len(data["results"]) == 0:
+                    break
+                
+                all_data.extend(data["results"])
+                
+                if len(data["results"]) < 1000:
+                    break
+                
+                offset += 1000
+                
+            elif response.status_code == 429:
+                print("  rate limit hit, waiting 60 seconds...")
+                time.sleep(60)
+                continue
+                
+            else:
+                print(f"  error: {response.status_code}")
+                print(f"  response: {response.text}")
+                break
+                
+        except Exception as e:
+            print(f"  exception: {e}")
             break
-        
-        all_results.extend(data["results"])
-        
-        if len(data["results"]) < 1000:
-            break
-        
-        offset += 1000
-        print(f"  got {len(all_results)} records")
     
-    return all_results
+    return all_data
 
-def save_data(city_name, data):
-    filename = f"{city_name.lower().replace(' ', '_')}_weather.json"
-    filepath = output_dir / filename
+def process_noaa_data(raw_data, city_name):
+    processed = []
     
-    with open(filepath, 'w') as f:
-        json.dump(data, f, indent=2)
+    for record in raw_data:
+        processed.append({
+            "city": city_name,
+            "date": record.get("date", ""),
+            "datatype": record.get("datatype", ""),
+            "value": record.get("value", None),
+            "attributes": record.get("attributes", "")
+        })
     
-    sha256 = hashlib.sha256()
-    with open(filepath, 'rb') as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            sha256.update(chunk)
-    
-    checksum_file = filepath.with_suffix('.json.sha256')
-    with open(checksum_file, 'w') as f:
-        f.write(f"{sha256.hexdigest()}  {filename}\n")
-    
-    print(f"  saved {filename}")
-    return filepath
+    return processed
 
-if __name__ == "__main__":
-    if noaa_api_token == "YOUR_NOAA_API_TOKEN_HERE":
-        print("need to set NOAA API token!")
-        print("get one at: https://www.ncdc.noaa.gov/cdo-web/token")
+print("starting noaa data acquisition...")
+print(f"date range: {start_date} to {end_date}")
+print(f"cities: {len(cities)}")
+print(f"datatypes: {', '.join(datatypes)}")
+print()
+
+metadata = {
+    "collection_date": datetime.now().isoformat(),
+    "date_range": {
+        "start": start_date,
+        "end": end_date
+    },
+    "datatypes": datatypes,
+    "cities": list(cities.keys()),
+    "stations": cities
+}
+
+for city_name, station_id in cities.items():
+    print(f"fetching data for {city_name} (station: {station_id})...")
+    
+    all_city_data = []
+    
+    for year in range(2013, 2023):
+        year_start = f"{year}-01-01"
+        year_end = f"{year}-12-31"
+        
+        print(f"  fetching year {year}...")
+        year_data = fetch_noaa_data(station_id, year_start, year_end, datatypes)
+        
+        if year_data:
+            all_city_data.extend(year_data)
+            print(f"    got {len(year_data)} records")
+    
+    if all_city_data:
+        processed_data = process_noaa_data(all_city_data, city_name)
+        
+        filename = f"{city_name.lower().replace(' ', '_')}_weather.json"
+        filepath = output_dir / filename
+        
+        with open(filepath, 'w') as f:
+            json.dump(processed_data, f, indent=2)
+        
+        print(f"  saved {len(processed_data)} records to {filepath}")
+        
+        checksum = calculate_checksum(filepath)
+        checksum_file = output_dir / f"{filename}.sha256"
+        with open(checksum_file, 'w') as f:
+            f.write(f"{checksum}  {filename}\n")
+        
+        print(f"  checksum saved to {checksum_file}")
     else:
-        metadata = {
-            "collection_date": datetime.now().isoformat(),
-            "date_range": {"start": start_date, "end": end_date},
-            "data_types": datatypes,
-            "cities": {}
-        }
-        
-        for city_name, location_id in metro_areas.items():
-            data = collect_city_data(city_name, location_id)
-            if data:
-                filepath = save_data(city_name, data)
-                metadata["cities"][city_name] = {
-                    "location_id": location_id,
-                    "records": len(data),
-                    "file": str(filepath.name)
-                }
-        
-        metadata_file = output_dir / "collection_metadata.json"
-        with open(metadata_file, 'w') as f:
-            json.dump(metadata, f, indent=2)
-        
-        print(f"\ndone! saved metadata to {metadata_file}")
+        print(f"  no data retrieved for {city_name}")
+    
+    print()
+
+metadata_file = output_dir / "collection_metadata.json"
+with open(metadata_file, 'w') as f:
+    json.dump(metadata, f, indent=2)
+
+print(f"metadata saved to {metadata_file}")
+print("done!")

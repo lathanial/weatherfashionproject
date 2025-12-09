@@ -22,31 +22,37 @@ if retail_file.exists():
     retail_df = pd.read_csv(retail_file)
     print(f"loaded {len(retail_df)} retail records")
 
+available_cols = weather_df.columns.tolist()
+print(f"available columns: {available_cols}")
+
 print("analyzing temperature trends...")
 fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 
-sns.boxplot(data=weather_df, x='season', y='TMAX_mean', ax=axes[0, 0])
-axes[0, 0].set_title('Maximum Temperature by Season')
-axes[0, 0].set_ylabel('Temperature (°C)')
+if 'season' in weather_df.columns and 'TMAX_mean' in weather_df.columns:
+    sns.boxplot(data=weather_df, x='season', y='TMAX_mean', ax=axes[0, 0])
+    axes[0, 0].set_title('Maximum Temperature by Season')
+    axes[0, 0].set_ylabel('Temperature (°C)')
 
-sns.boxplot(data=weather_df, x='city', y='TMAX_mean', ax=axes[0, 1])
-axes[0, 1].set_title('Maximum Temperature by City')
-axes[0, 1].set_ylabel('Temperature (°C)')
-axes[0, 1].tick_params(axis='x', rotation=45)
+if 'city' in weather_df.columns and 'TMAX_mean' in weather_df.columns:
+    sns.boxplot(data=weather_df, x='city', y='TMAX_mean', ax=axes[0, 1])
+    axes[0, 1].set_title('Maximum Temperature by City')
+    axes[0, 1].set_ylabel('Temperature (°C)')
+    axes[0, 1].tick_params(axis='x', rotation=45)
 
-yearly_anomaly = weather_df.groupby('year')['TMAX_anomaly'].mean()
-axes[1, 0].plot(yearly_anomaly.index, yearly_anomaly.values, marker='o')
-axes[1, 0].set_title('Temperature Anomaly Trend')
-axes[1, 0].set_xlabel('Year')
-axes[1, 0].set_ylabel('Temperature Anomaly (°C)')
-axes[1, 0].axhline(y=0, color='r', linestyle='--', alpha=0.5)
+if 'year' in weather_df.columns and 'TMAX_mean' in weather_df.columns:
+    yearly_temp = weather_df.groupby('year')['TMAX_mean'].mean()
+    axes[1, 0].plot(yearly_temp.index, yearly_temp.values, marker='o')
+    axes[1, 0].set_title('Average Maximum Temperature Trend')
+    axes[1, 0].set_xlabel('Year')
+    axes[1, 0].set_ylabel('Temperature (°C)')
 
-monthly_temp = weather_df.groupby('month')['TMAX_mean'].mean()
-axes[1, 1].plot(monthly_temp.index, monthly_temp.values, marker='o')
-axes[1, 1].set_title('Average Temperature by Month')
-axes[1, 1].set_xlabel('Month')
-axes[1, 1].set_ylabel('Temperature (°C)')
-axes[1, 1].set_xticks(range(1, 13))
+if 'month' in weather_df.columns and 'TMAX_mean' in weather_df.columns:
+    monthly_temp = weather_df.groupby('month')['TMAX_mean'].mean()
+    axes[1, 1].plot(monthly_temp.index, monthly_temp.values, marker='o')
+    axes[1, 1].set_title('Average Temperature by Month')
+    axes[1, 1].set_xlabel('Month')
+    axes[1, 1].set_ylabel('Temperature (°C)')
+    axes[1, 1].set_xticks(range(1, 13))
 
 plt.tight_layout()
 plt.savefig(output_dir / 'temperature_analysis.png', dpi=300, bbox_inches='tight')
@@ -56,26 +62,28 @@ print("saved temperature analysis")
 print("analyzing precipitation...")
 fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 
-sns.boxplot(data=weather_df, x='season', y='PRCP_sum', ax=axes[0, 0])
-axes[0, 0].set_title('Precipitation by Season')
-axes[0, 0].set_ylabel('Precipitation (mm)')
+if 'season' in weather_df.columns and 'PRCP_sum' in weather_df.columns:
+    sns.boxplot(data=weather_df, x='season', y='PRCP_sum', ax=axes[0, 0])
+    axes[0, 0].set_title('Precipitation by Season')
+    axes[0, 0].set_ylabel('Precipitation (mm)')
 
-sns.boxplot(data=weather_df, x='city', y='PRCP_sum', ax=axes[0, 1])
-axes[0, 1].set_title('Precipitation by City')
-axes[0, 1].set_ylabel('Precipitation (mm)')
-axes[0, 1].tick_params(axis='x', rotation=45)
+if 'city' in weather_df.columns and 'PRCP_sum' in weather_df.columns:
+    sns.boxplot(data=weather_df, x='city', y='PRCP_sum', ax=axes[0, 1])
+    axes[0, 1].set_title('Precipitation by City')
+    axes[0, 1].set_ylabel('Precipitation (mm)')
+    axes[0, 1].tick_params(axis='x', rotation=45)
 
-if 'SNOW_sum' in weather_df.columns:
+if 'SNOW_sum' in weather_df.columns and 'season' in weather_df.columns:
     sns.boxplot(data=weather_df, x='season', y='SNOW_sum', ax=axes[1, 0])
     axes[1, 0].set_title('Snowfall by Season')
     axes[1, 0].set_ylabel('Snowfall (mm)')
 
-yearly_precip_anomaly = weather_df.groupby('year')['PRCP_anomaly'].mean()
-axes[1, 1].plot(yearly_precip_anomaly.index, yearly_precip_anomaly.values, marker='o')
-axes[1, 1].set_title('Precipitation Anomaly Trend')
-axes[1, 1].set_xlabel('Year')
-axes[1, 1].set_ylabel('Precipitation Anomaly (mm)')
-axes[1, 1].axhline(y=0, color='r', linestyle='--', alpha=0.5)
+if 'year' in weather_df.columns and 'PRCP_sum' in weather_df.columns:
+    yearly_precip = weather_df.groupby('year')['PRCP_sum'].mean()
+    axes[1, 1].plot(yearly_precip.index, yearly_precip.values, marker='o')
+    axes[1, 1].set_title('Average Precipitation Trend')
+    axes[1, 1].set_xlabel('Year')
+    axes[1, 1].set_ylabel('Precipitation (mm)')
 
 plt.tight_layout()
 plt.savefig(output_dir / 'precipitation_analysis.png', dpi=300, bbox_inches='tight')
@@ -83,31 +91,40 @@ plt.close()
 print("saved precipitation analysis")
 
 print("analyzing extreme weather...")
-temp_threshold = 2
-extreme_heat = weather_df[weather_df['TMAX_anomaly'] > temp_threshold]
-extreme_cold = weather_df[weather_df['TMIN_anomaly'] < -temp_threshold]
-extreme_precip = weather_df[weather_df['PRCP_anomaly'] > weather_df['PRCP_anomaly'].quantile(0.95)]
+if 'TMAX_mean' in weather_df.columns:
+    temp_threshold = weather_df['TMAX_mean'].quantile(0.95)
+    extreme_heat = weather_df[weather_df['TMAX_mean'] > temp_threshold]
+    print(f"  extreme heat events: {len(extreme_heat)}")
 
-print(f"  extreme heat events: {len(extreme_heat)}")
-print(f"  extreme cold events: {len(extreme_cold)}")
-print(f"  extreme precip events: {len(extreme_precip)}")
+if 'TMIN_mean' in weather_df.columns:
+    cold_threshold = weather_df['TMIN_mean'].quantile(0.05)
+    extreme_cold = weather_df[weather_df['TMIN_mean'] < cold_threshold]
+    print(f"  extreme cold events: {len(extreme_cold)}")
+
+if 'PRCP_sum' in weather_df.columns:
+    precip_threshold = weather_df['PRCP_sum'].quantile(0.95)
+    extreme_precip = weather_df[weather_df['PRCP_sum'] > precip_threshold]
+    print(f"  extreme precip events: {len(extreme_precip)}")
 
 fig, axes = plt.subplots(1, 3, figsize=(18, 6))
 
-extreme_heat.groupby('city').size().plot(kind='bar', ax=axes[0])
-axes[0].set_title('Extreme Heat Events by City')
-axes[0].set_ylabel('Number of Events')
-axes[0].tick_params(axis='x', rotation=45)
+if 'city' in weather_df.columns and 'TMAX_mean' in weather_df.columns:
+    extreme_heat.groupby('city').size().plot(kind='bar', ax=axes[0])
+    axes[0].set_title('Extreme Heat Events by City')
+    axes[0].set_ylabel('Number of Events')
+    axes[0].tick_params(axis='x', rotation=45)
 
-extreme_cold.groupby('city').size().plot(kind='bar', ax=axes[1])
-axes[1].set_title('Extreme Cold Events by City')
-axes[1].set_ylabel('Number of Events')
-axes[1].tick_params(axis='x', rotation=45)
+if 'city' in weather_df.columns and 'TMIN_mean' in weather_df.columns:
+    extreme_cold.groupby('city').size().plot(kind='bar', ax=axes[1])
+    axes[1].set_title('Extreme Cold Events by City')
+    axes[1].set_ylabel('Number of Events')
+    axes[1].tick_params(axis='x', rotation=45)
 
-extreme_precip.groupby('city').size().plot(kind='bar', ax=axes[2])
-axes[2].set_title('Extreme Precipitation Events by City')
-axes[2].set_ylabel('Number of Events')
-axes[2].tick_params(axis='x', rotation=45)
+if 'city' in weather_df.columns and 'PRCP_sum' in weather_df.columns:
+    extreme_precip.groupby('city').size().plot(kind='bar', ax=axes[2])
+    axes[2].set_title('Extreme Precipitation Events by City')
+    axes[2].set_ylabel('Number of Events')
+    axes[2].tick_params(axis='x', rotation=45)
 
 plt.tight_layout()
 plt.savefig(output_dir / 'extreme_weather_analysis.png', dpi=300, bbox_inches='tight')
@@ -115,89 +132,100 @@ plt.close()
 print("saved extreme weather analysis")
 
 print("analyzing correlations...")
-weather_vars = ['TMAX_mean', 'TMIN_mean', 'PRCP_sum', 'TMAX_anomaly', 'TMIN_anomaly', 'PRCP_anomaly']
+weather_vars = ['TMAX_mean', 'TMIN_mean', 'PRCP_sum']
 available_vars = [var for var in weather_vars if var in weather_df.columns]
-corr_data = weather_df[available_vars]
-corr_matrix = corr_data.corr()
+if available_vars:
+    corr_data = weather_df[available_vars]
+    corr_matrix = corr_data.corr()
 
-plt.figure(figsize=(10, 8))
-sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0, fmt='.2f', square=True, linewidths=1)
-plt.title('Weather Variables Correlation Matrix')
-plt.tight_layout()
-plt.savefig(output_dir / 'correlation_matrix.png', dpi=300, bbox_inches='tight')
-plt.close()
-print("saved correlation matrix")
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0, fmt='.2f', square=True, linewidths=1)
+    plt.title('Weather Variables Correlation Matrix')
+    plt.tight_layout()
+    plt.savefig(output_dir / 'correlation_matrix.png', dpi=300, bbox_inches='tight')
+    plt.close()
+    print("saved correlation matrix")
 
 print("seasonal comparison...")
-fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+if 'season' in weather_df.columns and 'TMAX_mean' in weather_df.columns and 'TMIN_mean' in weather_df.columns:
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
 
-season_order = ['Winter', 'Spring', 'Summer', 'Fall']
-for season in season_order:
-    season_data = weather_df[weather_df['season'] == season]
-    axes[0, 0].scatter(season_data['TMIN_mean'], season_data['TMAX_mean'], alpha=0.3, label=season)
-axes[0, 0].set_xlabel('Minimum Temperature (°C)')
-axes[0, 0].set_ylabel('Maximum Temperature (°C)')
-axes[0, 0].set_title('Temperature Range by Season')
-axes[0, 0].legend()
+    season_order = ['Winter', 'Spring', 'Summer', 'Fall']
+    for season in season_order:
+        if season in weather_df['season'].values:
+            season_data = weather_df[weather_df['season'] == season]
+            axes[0, 0].scatter(season_data['TMIN_mean'], season_data['TMAX_mean'], alpha=0.3, label=season)
+    axes[0, 0].set_xlabel('Minimum Temperature (°C)')
+    axes[0, 0].set_ylabel('Maximum Temperature (°C)')
+    axes[0, 0].set_title('Temperature Range by Season')
+    axes[0, 0].legend()
 
-for season in season_order:
-    season_data = weather_df[weather_df['season'] == season]
-    yearly_avg = season_data.groupby('year')['TMAX_mean'].mean()
-    axes[0, 1].plot(yearly_avg.index, yearly_avg.values, marker='o', label=season)
-axes[0, 1].set_xlabel('Year')
-axes[0, 1].set_ylabel('Average Max Temperature (°C)')
-axes[0, 1].set_title('Seasonal Temperature Trends')
-axes[0, 1].legend()
+    if 'year' in weather_df.columns:
+        for season in season_order:
+            if season in weather_df['season'].values:
+                season_data = weather_df[weather_df['season'] == season]
+                yearly_avg = season_data.groupby('year')['TMAX_mean'].mean()
+                axes[0, 1].plot(yearly_avg.index, yearly_avg.values, marker='o', label=season)
+        axes[0, 1].set_xlabel('Year')
+        axes[0, 1].set_ylabel('Average Max Temperature (°C)')
+        axes[0, 1].set_title('Seasonal Temperature Trends')
+        axes[0, 1].legend()
 
-seasonal_precip = weather_df.groupby(['year', 'season'])['PRCP_sum'].mean().unstack()
-seasonal_precip.plot(ax=axes[1, 0], marker='o')
-axes[1, 0].set_xlabel('Year')
-axes[1, 0].set_ylabel('Average Precipitation (mm)')
-axes[1, 0].set_title('Seasonal Precipitation Trends')
-axes[1, 0].legend(title='Season')
+    if 'PRCP_sum' in weather_df.columns and 'year' in weather_df.columns:
+        seasonal_precip = weather_df.groupby(['year', 'season'])['PRCP_sum'].mean().unstack()
+        seasonal_precip.plot(ax=axes[1, 0], marker='o')
+        axes[1, 0].set_xlabel('Year')
+        axes[1, 0].set_ylabel('Average Precipitation (mm)')
+        axes[1, 0].set_title('Seasonal Precipitation Trends')
+        axes[1, 0].legend(title='Season')
 
-city_seasonal = weather_df.groupby(['city', 'season'])['TMAX_mean'].mean().unstack()
-city_seasonal.plot(kind='bar', ax=axes[1, 1])
-axes[1, 1].set_xlabel('City')
-axes[1, 1].set_ylabel('Average Max Temperature (°C)')
-axes[1, 1].set_title('Temperature by City and Season')
-axes[1, 1].legend(title='Season')
-axes[1, 1].tick_params(axis='x', rotation=45)
+    if 'city' in weather_df.columns:
+        city_seasonal = weather_df.groupby(['city', 'season'])['TMAX_mean'].mean().unstack()
+        city_seasonal.plot(kind='bar', ax=axes[1, 1])
+        axes[1, 1].set_xlabel('City')
+        axes[1, 1].set_ylabel('Average Max Temperature (°C)')
+        axes[1, 1].set_title('Temperature by City and Season')
+        axes[1, 1].legend(title='Season')
+        axes[1, 1].tick_params(axis='x', rotation=45)
 
-plt.tight_layout()
-plt.savefig(output_dir / 'seasonal_comparison.png', dpi=300, bbox_inches='tight')
-plt.close()
-print("saved seasonal comparison")
+    plt.tight_layout()
+    plt.savefig(output_dir / 'seasonal_comparison.png', dpi=300, bbox_inches='tight')
+    plt.close()
+    print("saved seasonal comparison")
 
 print("generating summary...")
 summary = {
     "analysis_date": datetime.now().isoformat(),
     "data_summary": {
         "total_records": int(len(weather_df)),
-        "cities": weather_df['city'].unique().tolist(),
+        "cities": weather_df['city'].unique().tolist() if 'city' in weather_df.columns else [],
         "years": {
-            "min": int(weather_df['year'].min()),
-            "max": int(weather_df['year'].max())
+            "min": int(weather_df['year'].min()) if 'year' in weather_df.columns else None,
+            "max": int(weather_df['year'].max()) if 'year' in weather_df.columns else None
         }
-    },
-    "temperature_summary": {
-        "overall_avg_max": float(weather_df['TMAX_mean'].mean()),
-        "overall_avg_min": float(weather_df['TMIN_mean'].mean()),
-        "warmest_city": weather_df.groupby('city')['TMAX_mean'].mean().idxmax(),
-        "coldest_city": weather_df.groupby('city')['TMIN_mean'].mean().idxmin()
-    },
-    "precipitation_summary": {
-        "overall_avg": float(weather_df['PRCP_sum'].mean()),
-        "wettest_city": weather_df.groupby('city')['PRCP_sum'].mean().idxmax(),
-        "driest_city": weather_df.groupby('city')['PRCP_sum'].mean().idxmin()
-    },
-    "extreme_events": {
-        "extreme_heat": int(len(extreme_heat)),
-        "extreme_cold": int(len(extreme_cold)),
-        "extreme_precipitation": int(len(extreme_precip))
-    },
-    "correlations": corr_matrix.to_dict()
+    }
 }
+
+if 'TMAX_mean' in weather_df.columns:
+    summary["temperature_summary"] = {
+        "overall_avg_max": float(weather_df['TMAX_mean'].mean()),
+        "overall_avg_min": float(weather_df['TMIN_mean'].mean()) if 'TMIN_mean' in weather_df.columns else None,
+    }
+    if 'city' in weather_df.columns:
+        summary["temperature_summary"]["warmest_city"] = weather_df.groupby('city')['TMAX_mean'].mean().idxmax()
+        if 'TMIN_mean' in weather_df.columns:
+            summary["temperature_summary"]["coldest_city"] = weather_df.groupby('city')['TMIN_mean'].mean().idxmin()
+
+if 'PRCP_sum' in weather_df.columns:
+    summary["precipitation_summary"] = {
+        "overall_avg": float(weather_df['PRCP_sum'].mean())
+    }
+    if 'city' in weather_df.columns:
+        summary["precipitation_summary"]["wettest_city"] = weather_df.groupby('city')['PRCP_sum'].mean().idxmax()
+        summary["precipitation_summary"]["driest_city"] = weather_df.groupby('city')['PRCP_sum'].mean().idxmin()
+
+if available_vars:
+    summary["correlations"] = corr_matrix.to_dict()
 
 summary_file = output_dir / "analysis_summary.json"
 with open(summary_file, 'w') as f:
